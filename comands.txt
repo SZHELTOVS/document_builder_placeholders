@@ -1,0 +1,15 @@
+
+
+ЗАПУСК БЭК
+
+cd backend
+
+.\venv\Scripts\activate
+
+python .\manage.py runserver
+
+ЗАПУСК ФРОНТ
+
+cd .\backend\frontend\
+
+npm run dev

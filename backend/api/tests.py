@@ -23,13 +23,11 @@ class DocumentBuilderTests(TestCase):
         
     def test_project_structure(self):
         """Тест структуры проекта: проверяем наличие ключевых файлов"""
-        # ИСПРАВЛЕНО: Используем правильные пути для вашего проекта
         
         # 1. Проверяем что manage.py существует (относительно корня проекта)
         self.assertTrue(os.path.exists("manage.py"))
         
-        # 2. Проверяем наличие ключевых папок ВАШЕГО проекта
-        # Вместо services/ проверяем то, что реально есть:
+        # 2. Проверяем наличие ключевых папок проекта
         important_dirs = [
             "api/",           # Основное приложение
             "media/",         # Для загрузки файлов
@@ -41,7 +39,6 @@ class DocumentBuilderTests(TestCase):
             if os.path.exists(directory):
                 found_dirs.append(directory)
         
-        # Для лабораторной достаточно 1-2 найденных папок
         self.assertGreaterEqual(len(found_dirs), 1, 
                             f"Должна быть хотя бы одна из папок: {important_dirs}")
         
@@ -61,7 +58,7 @@ class DocumentBuilderTests(TestCase):
     def test_placeholder_functions_exist(self):
         """Тест существования функций обработки документов"""
         try:
-            # Пробуем импортировать функции из вашего кода
+            
             from document_builder_placeholders.backend.api.utils import extract_placeholders, replace_placeholders
             
             # Проверяем что функции можно вызвать (даже если они упадут)
@@ -71,7 +68,7 @@ class DocumentBuilderTests(TestCase):
             print("CI/CD Тест 5: Функции обработки документов доступны")
             
         except ImportError as e:
-            # Если импорт не удался - для лабораторной это ок
+           
             print(f"CI/CD Тест 5: Импорт функций не удался ({e})")
             print("Примечание: Для лабораторной CI/CD это допустимо")
             self.assertTrue(True)  # Все равно успешный тест

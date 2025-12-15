@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Install Dependencies') {
             steps {
-                echo '📦 Устанавливаю зависимости Python...'
+                echo 'Устанавливаю зависимости Python...'
                 dir('backend') {
                     bat '''
                         python -m pip install --upgrade pip
@@ -17,7 +17,7 @@ pipeline {
         
         stage('CI: Run Tests') {
             steps {
-                echo '🧪 CI: Запуск автотестов'
+                echo 'CI: Запуск автотестов'
                 dir('backend') {
                     bat '''
                         python manage.py test --noinput || echo "Тесты завершены"
@@ -31,7 +31,7 @@ pipeline {
                 branch 'main'  // ТОЛЬКО для main!
             }
             steps {
-                echo '🚀 CD: Деплой на продакшен'
+                echo 'CD: Деплой на продакшен'
                 bat '''
                     echo "Деплой выполнен успешно!" > deploy_report.txt
                     echo "Ветка: main" >> deploy_report.txt
@@ -44,7 +44,7 @@ pipeline {
     
     post {
         always {
-            echo '🏁 CI/CD пайплайн завершен'
+            echo 'CI/CD пайплайн завершен'
         }
     }
 }

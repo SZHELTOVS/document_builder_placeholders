@@ -12,14 +12,14 @@ class DocumentBuilderTests(TestCase):
     def test_ci_cd_demo_basic(self):
         """Базовый тест: проверяем что тестовая система работает"""
         self.assertTrue(True)  # Всегда успешно
-        print("✅ CI/CD Тест 1: Базовая проверка пройдена")
+        print("CI/CD Тест 1: Базовая проверка пройдена")
         
     def test_math_logic(self):
         """Тест логики: проверяем простые вычисления"""
         result = 2 + 2
         expected = 4
         self.assertEqual(result, expected)
-        print(f"✅ CI/CD Тест 2: Математика верна ({result} = {expected})")
+        print(f"CI/CD Тест 2: Математика верна ({result} = {expected})")
         
     def test_project_structure(self):
         """Тест структуры проекта: проверяем наличие ключевых файлов"""
@@ -45,7 +45,7 @@ class DocumentBuilderTests(TestCase):
         self.assertGreaterEqual(len(found_dirs), 1, 
                             f"Должна быть хотя бы одна из папок: {important_dirs}")
         
-        print(f"✅ CI/CD Тест 3: Найдены папки: {found_dirs}")
+        print(f"CI/CD Тест 3: Найдены папки: {found_dirs}")
         
     def test_django_functionality(self):
         """Тест функциональности Django"""
@@ -56,7 +56,7 @@ class DocumentBuilderTests(TestCase):
         self.assertTrue(hasattr(settings, 'INSTALLED_APPS'))
         self.assertTrue(hasattr(settings, 'SECRET_KEY'))
         
-        print("✅ CI/CD Тест 4: Django функционирует нормально")
+        print("CI/CD Тест 4: Django функционирует нормально")
         
     def test_placeholder_functions_exist(self):
         """Тест существования функций обработки документов"""
@@ -68,7 +68,7 @@ class DocumentBuilderTests(TestCase):
             self.assertTrue(callable(extract_placeholders))
             self.assertTrue(callable(replace_placeholders))
             
-            print("✅ CI/CD Тест 5: Функции обработки документов доступны")
+            print("CI/CD Тест 5: Функции обработки документов доступны")
             
         except ImportError as e:
             # Если импорт не удался - для лабораторной это ок
@@ -100,7 +100,7 @@ def run_ci_cd_demo():
     Функция для ручного запуска тестов CI/CD
     Полезно для проверки перед коммитом
     """
-    print("🚀 Запуск демонстрационных тестов CI/CD...")
+    print("Запуск демонстрационных тестов CI/CD...")
     
     # Создаем тестовый набор
     import unittest
@@ -110,7 +110,7 @@ def run_ci_cd_demo():
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     
-    print("\n📊 Результаты для отчета:")
+    print("\nРезультаты для отчета:")
     print(f"Всего тестов: {result.testsRun}")
     print(f"Успешно: {result.testsRun - len(result.failures) - len(result.errors)}")
     

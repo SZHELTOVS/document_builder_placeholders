@@ -62,7 +62,7 @@ class DocumentBuilderTests(TestCase):
         """Тест существования функций обработки документов"""
         try:
             # Пробуем импортировать функции из вашего кода
-            from services.docx_processor import extract_placeholders, replace_placeholders
+            from document_builder_placeholders.backend.api.utils import extract_placeholders, replace_placeholders
             
             # Проверяем что функции можно вызвать (даже если они упадут)
             self.assertTrue(callable(extract_placeholders))
@@ -72,7 +72,7 @@ class DocumentBuilderTests(TestCase):
             
         except ImportError as e:
             # Если импорт не удался - для лабораторной это ок
-            print(f"⚠ CI/CD Тест 5: Импорт функций не удался ({e})")
+            print(f"CI/CD Тест 5: Импорт функций не удался ({e})")
             print("Примечание: Для лабораторной CI/CD это допустимо")
             self.assertTrue(True)  # Все равно успешный тест
             

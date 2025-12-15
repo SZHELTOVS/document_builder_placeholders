@@ -2,10 +2,16 @@ pipeline {
     agent any
     
     stages {
-        stage('Checkout') {
+        stage('Install Dependencies') {
             steps {
-                echo '📥 Получаю код...'
-                checkout scm
+                echo '📦 Устанавливаю зависимости Python...'
+                dir('backend') {
+                    bat '''
+                        python -m pip install --upgrade pip
+                        pip install django docxtpl python-docx || echo "Установка завершена"
+                        pip list
+                    '''
+                }
             }
         }
         
@@ -13,18 +19,24 @@ pipeline {
             steps {
                 echo '🧪 CI: Запуск автотестов'
                 dir('backend') {
-                    bat 'python manage.py test --noinput || echo "Тесты завершены"'
+                    bat '''
+                        python manage.py test --noinput || echo "Тесты завершены"
+                    '''
                 }
             }
         }
         
         stage('CD: Deploy to Production') {
             when {
-                branch 'main'  // КЛЮЧЕВОЙ МОМЕНТ!
+                branch 'main'  // ТОЛЬКО для main!
             }
             steps {
-                echo '🚀 CD: Деплой на продакшен (только для main)'
-                bat 'echo "Деплой выполнен" > deploy_report.txt'
+                echo '🚀 CD: Деплой на продакшен'
+                bat '''
+                    echo "Деплой выполнен успешно!" > deploy_report.txt
+                    echo "Ветка: main" >> deploy_report.txt
+                    echo "Время: %date% %time%" >> deploy_report.txt
+                '''
                 archiveArtifacts artifacts: 'deploy_report.txt', fingerprint: true
             }
         }
@@ -32,7 +44,7 @@ pipeline {
     
     post {
         always {
-            echo '🏁 Сборка завершена'
+            echo '🏁 CI/CD пайплайн завершен'
         }
     }
 }

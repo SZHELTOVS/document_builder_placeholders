@@ -31,11 +31,11 @@ pipeline {
                 branch 'main'  // ТОЛЬКО для main!
             }
             steps {
-                echo 'CD: Деплой на продакшен'
+                echo 'CD: prod deploy'
                 bat '''
-                    echo "Деплой выполнен успешно!" > deploy_report.txt
-                    echo "Ветка: main" >> deploy_report.txt
-                    echo "Время: %date% %time%" >> deploy_report.txt
+                    echo "OK!" > deploy_report.txt
+                    echo "branch: main" >> deploy_report.txt
+                    echo "time: %date% %time%" >> deploy_report.txt
                 '''
                 archiveArtifacts artifacts: 'deploy_report.txt', fingerprint: true
             }

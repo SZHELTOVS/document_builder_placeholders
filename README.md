@@ -16,4 +16,5 @@ cd .\backend\frontend\
 
 npm run dev
 # CI/CD Laboratory Work
-# update build rules. check every minute
+# update build rules. check every minute 
+?

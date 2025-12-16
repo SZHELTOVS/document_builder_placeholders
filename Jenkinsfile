@@ -28,7 +28,7 @@ pipeline {
         
         stage('CD: Deploy to Production') {
             when {
-                branch 'main'  // ТОЛЬКО для main!
+                expression { env.BRANCH_NAME == 'main' }
             }
             steps {
                 echo 'CD: prod deploy'

@@ -15,4 +15,4 @@ frontend:
 cd .\backend\frontend\
 
 npm run dev
-aetrysktudlyifou;gip
+aetrysktudlyifou;gip ef

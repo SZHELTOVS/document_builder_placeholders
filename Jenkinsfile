@@ -2,49 +2,85 @@ pipeline {
     agent any
     
     stages {
-        stage('Install Dependencies') {
+        stage('Build Docker Images') {
             steps {
-                echo 'Устанавливаю зависимости Python...'
-                dir('backend') {
-                    bat '''
-                        python -m pip install --upgrade pip
-                        pip install django docxtpl python-docx || echo "Установка завершена"
-                        pip list
-                    '''
-                }
-            }
-        }
-        
-        stage('CI: Run Tests') {
-            steps {
-                echo 'CI: Запуск автотестов'
-                dir('backend') {
-                    bat '''
-                        python manage.py test --noinput || echo "Тесты завершены"
-                    '''
-                }
-            }
-        }
-        
-        stage('CD: Deploy to Production') {
-            when {
-                branch 'main' 
-            }
-            steps {
-                echo 'CD: Деплой на продакшен'
                 bat '''
-                    echo "Деплой выполнен успешно!" > deploy_report.txt
-                    echo "Ветка: main" >> deploy_report.txt
-                    echo "Время: %date% %time%" >> deploy_report.txt
+                    echo Step 1: Building Docker images...
+                    
+                    cd backend
+                    docker build -t lab-backend:latest . > ..\\build_backend.log 2>&1
+                    type ..\\build_backend.log
+                    
+                    cd frontend
+                    docker build -t lab-frontend:latest . > ..\\build_frontend.log 2>&1
+                    type ..\\build_frontend.log
+                    
+                    cd ..
+                    echo Docker images built successfully >> build.log
                 '''
-                archiveArtifacts artifacts: 'deploy_report.txt', fingerprint: true
+                archiveArtifacts artifacts: 'build*.log', fingerprint: true
+            }
+        }
+        
+        stage('Run Application') {
+            steps {
+                bat '''
+                    echo Step 2: Running with Docker Compose...
+                    
+                    docker-compose down > compose_down.log 2>&1
+                    type compose_down.log
+                    
+                    docker-compose up -d > compose_up.log 2>&1
+                    type compose_up.log
+                    
+                    timeout /t 5
+                    
+                    docker-compose ps > compose_status.log 2>&1
+                    type compose_status.log
+                    
+                    echo Application running successfully >> run.log
+                '''
+                archiveArtifacts artifacts: 'compose_*.log,run.log', fingerprint: true
+            }
+        }
+        
+        stage('Create Lab Report') {
+            steps {
+                bat '''
+                    echo === DEVOPS LAB REPORT === > report.txt
+                    echo BUILD NUMBER: %BUILD_NUMBER% >> report.txt
+                    echo DATE: %date% %time% >> report.txt
+                    echo >> report.txt
+                    
+                    echo === DOCKER CONTAINERS === >> report.txt
+                    docker-compose ps >> report.txt
+                    echo >> report.txt
+                    
+                    echo === DOCKER IMAGES === >> report.txt
+                    docker images >> report.txt
+                    echo >> report.txt
+                    
+                    echo === DOCKER NETWORKS === >> report.txt
+                    docker network ls >> report.txt
+                    echo >> report.txt
+                    
+                    echo STATUS: SUCCESS >> report.txt
+                '''
+                archiveArtifacts artifacts: 'report.txt', fingerprint: true
             }
         }
     }
     
     post {
         always {
-            echo 'CI/CD пайплайн завершен'
+            echo 'Pipeline completed'
+            bat 'docker-compose down'
+        }
+        success {
+            echo 'SUCCESS: All stages passed'
+        }
+        failure {
+            echo 'FAILURE: Pipeline failed'
         }
     }
 }

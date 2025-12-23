@@ -1,4 +1,0 @@
-Django==5.2.5
-djangorestframework==3.16.1
-django-cors-headers==4.7.0
-docxtpl==0.20.1

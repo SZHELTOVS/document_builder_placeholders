@@ -74,7 +74,7 @@ export default defineConfig((/* ctx */) => {
     devServer: {
       proxy: {
         '/api': {
-          target: 'http://localhost:8000',  // сюда уходит Django
+          target: 'http://backend:8000',  // сюда уходит Django
           changeOrigin: true,
         },
       },

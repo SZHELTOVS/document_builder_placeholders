@@ -5,44 +5,82 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 bat '''
-                    echo "Step 1: Building Docker images..."
-                    docker build -t lab-backend:latest ./backend 2>&1 | tee build.log
-                    docker build -t lab-frontend:latest -f ./backend/frontend/Dockerfile ./backend/frontend 2>&1 | tee -a build.log
-                    echo "Docker images built" >> build.log
+                    echo Step 1: Building Docker images...
+                    
+                    cd backend
+                    docker build -t lab-backend:latest . > ..\\build_backend.log 2>&1
+                    type ..\\build_backend.log
+                    
+                    cd frontend
+                    docker build -t lab-frontend:latest . > ..\\build_frontend.log 2>&1
+                    type ..\\build_frontend.log
+                    
+                    cd ..
+                    echo Docker images built successfully >> build.log
                 '''
-                archiveArtifacts artifacts: 'build.log', fingerprint: true
+                archiveArtifacts artifacts: 'build*.log', fingerprint: true
             }
         }
         
         stage('Run Application') {
             steps {
                 bat '''
-                    echo "Step 2: Running with Docker Compose..."
-                    docker-compose down 2>&1 | tee run.log
-                    docker-compose up -d 2>&1 | tee -a run.log
+                    echo Step 2: Running with Docker Compose...
+                    
+                    docker-compose down > compose_down.log 2>&1
+                    type compose_down.log
+                    
+                    docker-compose up -d > compose_up.log 2>&1
+                    type compose_up.log
+                    
                     timeout /t 5
-                    docker-compose ps 2>&1 | tee -a run.log
-                    echo "Application running" >> run.log
+                    
+                    docker-compose ps > compose_status.log 2>&1
+                    type compose_status.log
+                    
+                    echo Application running successfully >> run.log
                 '''
-                archiveArtifacts artifacts: 'run.log', fingerprint: true
+                archiveArtifacts artifacts: 'compose_*.log,run.log', fingerprint: true
             }
         }
         
         stage('Create Lab Report') {
             steps {
                 bat '''
-                    echo "=== DEVOPS LAB REPORT ===" > report.txt
-                    echo "CONTAINERS:" >> report.txt
+                    echo === DEVOPS LAB REPORT === > report.txt
+                    echo BUILD NUMBER: %BUILD_NUMBER% >> report.txt
+                    echo DATE: %date% %time% >> report.txt
+                    echo >> report.txt
+                    
+                    echo === DOCKER CONTAINERS === >> report.txt
                     docker-compose ps >> report.txt
-                    echo "" >> report.txt
-                    echo "IMAGES:" >> report.txt
+                    echo >> report.txt
+                    
+                    echo === DOCKER IMAGES === >> report.txt
                     docker images >> report.txt
-                    echo "" >> report.txt
-                    echo "NETWORK:" >> report.txt
+                    echo >> report.txt
+                    
+                    echo === DOCKER NETWORKS === >> report.txt
                     docker network ls >> report.txt
+                    echo >> report.txt
+                    
+                    echo STATUS: SUCCESS >> report.txt
                 '''
                 archiveArtifacts artifacts: 'report.txt', fingerprint: true
             }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Pipeline completed'
+            bat 'docker-compose down'
+        }
+        success {
+            echo 'SUCCESS: All stages passed'
+        }
+        failure {
+            echo 'FAILURE: Pipeline failed'
         }
     }
 }

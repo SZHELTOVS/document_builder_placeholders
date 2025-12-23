@@ -28,7 +28,7 @@ pipeline {
         
         stage('CD: Deploy to Production') {
             when {
-                branch 'main'  // ТОЛЬКО для main!
+                branch 'main' 
             }
             steps {
                 echo 'CD: Деплой на продакшен'

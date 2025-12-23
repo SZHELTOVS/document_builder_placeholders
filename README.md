@@ -13,6 +13,3 @@ python .\manage.py runserver
 frontend:
 
 cd .\backend\frontend\
-
-npm run dev
-aetrysktudlyifou;gip ef

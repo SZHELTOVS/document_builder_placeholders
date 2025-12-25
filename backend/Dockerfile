@@ -15,11 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Копируем entrypoint
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 EXPOSE 8000
 
-# ТОЛЬКО entrypoint - CMD не нужен
-ENTRYPOINT ["/entrypoint.sh"]
+# УБРАТЬ ENTRYPOINT - использовать только CMD
+# Или оставить простой CMD как запасной вариант
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

@@ -20,46 +20,30 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    // Пропускаем сборку frontend если она падает
-                    bat '''
-                        echo "=== Building Backend ==="
-                        cd backend
-                        
-                        echo "Checking backend Dockerfile..."
-                        if exist Dockerfile (
-                            type Dockerfile | findstr "ENTRYPOINT"
-                        ) else (
-                            echo "ERROR: Dockerfile not found!"
-                        )
-                        
-                        docker build -t lab-backend:latest . > ..\\build_backend.log 2>&1
-                        type ..\\build_backend.log
-                        cd ..
-                    '''
-                    
-                    // Пробуем собрать frontend, но не падаем если ошибка
+                    // 1. Сборка бэкенда
                     try {
                         bat '''
-                            echo "=== Trying to build Frontend ==="
-                            cd backend\\frontend
-                            
-                            echo "Temporary fix: using Dockerfile.dev instead..."
-                            if exist Dockerfile.dev (
-                                docker build -t lab-frontend:latest -f Dockerfile.dev . > ..\\..\\build_frontend.log 2>&1
-                            ) else (
-                                echo "ERROR: Dockerfile.dev not found, skipping frontend build"
-                                echo "Frontend build skipped" > ..\\..\\build_frontend.log
-                            )
-                            
-                            type ..\\..\\build_frontend.log
-                            cd ..\\..
+                            echo "Building backend Docker image..."
+                            docker build -t lab-backend:latest ./backend
                         '''
                     } catch (Exception e) {
-                        echo "WARNING: Frontend build failed, continuing anyway: ${e.getMessage()}"
-                        bat 'echo "Frontend build failed, using existing image" >> build_frontend.log'
+                        error "Backend build failed: ${e.getMessage()}"
+                    }
+                    
+                    // 2. Пробуем собрать фронтенд, но не падаем
+                    try {
+                        bat '''
+                            echo "Building frontend Docker image..."
+                            docker build -t lab-frontend:latest ./backend/frontend
+                        '''
+                    } catch (Exception e) {
+                        echo "WARNING: Frontend build skipped: ${e.getMessage()}"
+                        // Можно использовать заранее собранный образ
+                        bat '''
+                            echo "Using pre-built frontend image or will skip deployment"
+                        '''
                     }
                 }
-                archiveArtifacts artifacts: 'build*.log', fingerprint: true
             }
         }
         

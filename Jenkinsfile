@@ -154,21 +154,6 @@ pipeline {
             }
         }
         
-        // === Деплой НЕ делаем - убираем этот stage ===
-        // stage('CD: Deploy to Production') {
-        //     when {
-        //         branch 'main' 
-        //     }
-        //     steps {
-        //         echo 'CD: Деплой на продакшен'
-        //         bat '''
-        //             echo "Деплой выполнен успешно!" > deploy_report.txt
-        //             echo "Ветка: main" >> deploy_report.txt
-        //             echo "Время: %date% %time%" >> deploy_report.txt
-        //         '''
-        //         archiveArtifacts artifacts: 'deploy_report.txt', fingerprint: true
-        //     }
-        // }
     }
     
     post {

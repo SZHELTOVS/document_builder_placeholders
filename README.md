@@ -13,4 +13,4 @@ python .\manage.py runserver
 frontend:
 
 cd .\backend\frontend\
-earehtsrjytjtrhaergw ea grethsrjydt
+dev

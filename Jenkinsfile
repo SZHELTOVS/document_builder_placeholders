@@ -2,19 +2,29 @@ pipeline {
     agent any
     
     stages {
-        stage('Cleanup Before Build') {
+        stage('Force Docker Cleanup') {
             steps {
                 bat '''
-                    echo === PRE-BUILD CLEANUP ===
+                    echo === COMPLETE DOCKER CLEANUP ===
                     
-                    echo "1. Stopping ALL project containers..."
-                    docker-compose down --remove-orphans 2>nul || echo "No compose services"
+                    echo "1. Stop all Docker Compose services..."
+                    docker-compose down -v --remove-orphans 2>nul || echo "No compose services found"
                     
-                    echo "2. Force removing containers by name pattern..."
-                    docker rm -f docbuilder-postgres docbuilder-backend docbuilder-frontend 2>nul || echo "Some containers not found"
+                    echo "2. Remove ALL containers with 'docbuilder' in name..."
+                    for /f "tokens=*" %%i in ('docker ps -a --filter "name=docbuilder" -q') do (
+                        echo Removing container: %%i
+                        docker rm -f %%i 2>nul
+                    )
                     
-                    echo "3. Removing dangling containers (Windows method)..."
-                    for /f "tokens=*" %%i in ('docker ps -a --filter "name=docbuilder" -q') do docker rm -f %%i 2>nul
+                    echo "3. Remove ALL project networks..."
+                    docker network rm document-builder-ci-cd_default document_builder_clean_default document_builder_placeholders_default 2>nul || echo "Networks not found or in use"
+                    
+                    echo "4. Remove ALL project volumes..."
+                    docker volume rm document-builder-ci-cd_postgres_data document-builder-ci-cd_backend_static document-builder-ci-cd_backend_media 2>nul || echo "Volumes not found"
+                    docker volume rm document_builder_clean_postgres_data document_builder_clean_backend_static document_builder_clean_backend_media 2>nul || echo "Volumes not found"
+                    
+                    echo "5. Prune unused Docker resources..."
+                    docker system prune -f 2>nul || echo "Prune failed"
                     
                     echo "Cleanup completed successfully!"
                 '''

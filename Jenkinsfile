@@ -13,50 +13,48 @@ pipeline {
                     echo "2. Force removing containers by name pattern..."
                     docker rm -f docbuilder-postgres docbuilder-backend docbuilder-frontend 2>nul || echo "Some containers not found"
                     
-                    echo "3. Removing dangling containers..."
-                    docker ps -a --filter "name=docbuilder" -q | xargs docker rm -f 2>nul || echo "No containers to remove"
+                    echo "3. Removing dangling containers (Windows method)..."
+                    for /f "tokens=*" %%i in ('docker ps -a --filter "name=docbuilder" -q') do docker rm -f %%i 2>nul
                     
-                    echo "4. Checking network..."
-                    docker network rm document-builder-ci-cd_default 2>nul || echo "Network not found or in use"
-                    
-                    echo "Cleanup completed!"
+                    echo "Cleanup completed successfully!"
                 '''
             }
         }
         
         stage('Build Docker Images') {
             steps {
-                script {
-                    // Frontend должен быть исправленным!
-                    bat '''
-                        echo Step 1: Building Docker images...
-                        
-                        echo "=== Building Backend ==="
-                        cd backend
-                        docker build -t lab-backend:latest . > ..\\build_backend.log 2>&1
-                        type ..\\build_backend.log
-                        
-                        echo "=== Building Frontend ==="
-                        cd frontend
-                        # Проверяем наличие нужных файлов
-                        dir quasar.config.js /b 2>nul && echo "Quasar config found" || echo "WARNING: quasar.config.js not found!"
-                        dir package.json /b 2>nul && echo "package.json found" || echo "ERROR: package.json not found!"
-                        
-                        docker build -t lab-frontend:latest . > ..\\build_frontend.log 2>&1
-                        type ..\\build_frontend.log
-                        
-                        cd ..\\..
-                        echo Docker images built successfully >> build.log
-                    '''
+                bat '''
+                    echo Step 1: Building Docker images...
                     
-                    // Проверяем, была ли ошибка сборки frontend
-                    def frontendLog = readFile('build_frontend.log')
-                    if (frontendLog.contains('ERROR: failed to build')) {
-                        echo "WARNING: Frontend build failed, but continuing..."
-                        // Можно закомментировать эту строку, чтобы пайплайн продолжал работу
-                    }
-                }
-                
+                    echo "=== Building Backend ==="
+                    cd backend
+                    docker build -t lab-backend:latest . > ..\\build_backend.log 2>&1
+                    type ..\\build_backend.log
+                    
+                    echo "=== Building Frontend (with fix) ==="
+                    cd frontend
+                    
+                    echo "Checking frontend files..."
+                    if exist quasar.config.js (
+                        echo "✓ quasar.config.js found"
+                    ) else (
+                        echo "✗ ERROR: quasar.config.js not found!"
+                        dir /b
+                    )
+                    
+                    if exist package.json (
+                        echo "✓ package.json found"
+                        type package.json | findstr "postinstall"
+                    ) else (
+                        echo "✗ ERROR: package.json not found!"
+                    )
+                    
+                    docker build -t lab-frontend:latest . > ..\\build_frontend.log 2>&1
+                    type ..\\build_frontend.log
+                    
+                    cd ..\\..
+                    echo Docker images built successfully >> build.log
+                '''
                 archiveArtifacts artifacts: 'build*.log', fingerprint: true
             }
         }
@@ -66,28 +64,35 @@ pipeline {
                 bat '''
                     echo Step 2: Running with Docker Compose...
                     
-                    echo "=== Final cleanup ==="
+                    echo "=== Final cleanup before start ==="
                     docker-compose down 2>nul || echo "Already clean"
                     
                     echo "=== Starting services ==="
                     docker-compose up -d --force-recreate
                     
-                    timeout /t 15 /nobreak >nul
+                    timeout /t 10 /nobreak >nul
                     
                     echo "=== Container Status ==="
                     docker-compose ps
                     
                     echo "=== Service Check ==="
-                    echo "Backend (8000):"
-                    curl --max-time 5 -f http://localhost:8000/ || echo "Backend not ready yet"
+                    echo "Testing Backend (port 8000)..."
+                    curl --max-time 10 -f http://localhost:8000/ && (
+                        echo "✓ Backend is responding"
+                    ) || (
+                        echo "✗ Backend not responding, checking logs..."
+                        docker-compose logs backend --tail=10
+                    )
                     
-                    echo "Frontend (9000):"
-                    curl --max-time 5 -f http://localhost:9000/ || echo "Frontend not ready yet"
+                    echo "Testing Frontend (port 9000)..."
+                    curl --max-time 10 -f http://localhost:9000/ && (
+                        echo "✓ Frontend is responding"
+                    ) || (
+                        echo "✗ Frontend not responding, checking logs..."
+                        docker-compose logs frontend --tail=10
+                    )
                     
-                    echo "=== Logs Summary ==="
-                    docker-compose logs --tail=5
-                    
-                    echo Application started >> run.log
+                    echo Application started successfully >> run.log
                 '''
                 archiveArtifacts artifacts: 'compose_*.log,run.log', fingerprint: true
             }
@@ -105,12 +110,13 @@ pipeline {
                     docker-compose ps >> report.txt
                     echo >> report.txt
                     
-                    echo === DOCKER IMAGES === >> report.txt
-                    docker images lab-* >> report.txt
+                    echo === ACCESS URLS === >> report.txt
+                    echo "Backend:  http://localhost:8000/" >> report.txt
+                    echo "Frontend: http://localhost:9000/" >> report.txt
                     echo >> report.txt
                     
-                    echo STATUS: COMPLETED >> report.txt
-                    echo NOTE: Containers are running >> report.txt
+                    echo STATUS: RUNNING >> report.txt
+                    echo "Note: Containers will remain active after pipeline completes" >> report.txt
                 '''
                 archiveArtifacts artifacts: 'report.txt', fingerprint: true
             }
@@ -119,7 +125,7 @@ pipeline {
     
     post {
         always {
-            echo 'Pipeline completed'
+            echo 'Pipeline execution completed'
         }
         success {
             echo 'SUCCESS: All stages passed'
@@ -127,20 +133,22 @@ pipeline {
                 echo === FINAL STATUS ===
                 docker-compose ps
                 echo.
-                echo Services are running!
-                echo Backend: http://localhost:8000/
-                echo Frontend: http://localhost:9000/
+                echo "Services are running!"
+                echo "Backend:  http://localhost:8000/"
+                echo "Frontend: http://localhost:9000/"
+                echo.
+                echo "To stop containers manually: docker-compose down"
             '''
         }
         failure {
             echo 'FAILURE: Pipeline failed'
             bat '''
                 echo === DEBUG INFO ===
-                echo "Containers:"
+                echo "All containers:"
                 docker ps -a
                 echo.
-                echo "Recent logs:"
-                docker-compose logs --tail=20 2>nul || echo "Cannot get logs"
+                echo "Project containers:"
+                docker ps -a --filter "name=docbuilder"
                 echo.
                 echo "Cleaning up..."
                 docker-compose down 2>nul || echo "Cleanup failed"

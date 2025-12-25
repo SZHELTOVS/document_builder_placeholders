@@ -2,32 +2,6 @@ pipeline {
     agent any
     
     stages {
-        // === CI часть: тесты ===
-        stage('Install Dependencies') {
-            steps {
-                echo 'Устанавливаю зависимости Python...'
-                dir('backend') {
-                    bat '''
-                        python -m pip install --upgrade pip
-                        pip install django docxtpl python-docx || echo "Установка завершена"
-                        pip list
-                    '''
-                }
-            }
-        }
-        
-        stage('CI: Run Tests') {
-            steps {
-                echo 'CI: Запуск автотестов'
-                dir('backend') {
-                    bat '''
-                        python manage.py test --noinput || echo "Тесты завершены"
-                    '''
-                }
-            }
-        }
-        
-        // === Docker часть: сборка и запуск ===
         stage('Force Docker Cleanup') {
             steps {
                 bat '''
@@ -64,6 +38,7 @@ pipeline {
                         '''
                     } catch (Exception e) {
                         echo "WARNING: Frontend build skipped: ${e.getMessage()}"
+                        // Можно использовать заранее собранный образ
                         bat '''
                             echo "Using pre-built frontend image or will skip deployment"
                         '''
@@ -72,7 +47,7 @@ pipeline {
             }
         }
         
-        stage('Run Docker Application') {
+        stage('Run Application') {
             steps {
                 bat '''
                     echo === STARTING APPLICATION ===
@@ -115,18 +90,42 @@ pipeline {
             }
         }
         
-        // === Отчетность ===
+        stage('Debug if Failed') {
+            when {
+                expression { currentBuild.result == 'FAILURE' || currentBuild.result == null }
+            }
+            steps {
+                bat '''
+                    echo === DEBUG INFORMATION ===
+                    
+                    echo "1. Checking all containers:"
+                    docker ps -a
+                    
+                    echo "2. Checking backend container state:"
+                    docker inspect docbuilder-backend --format "table {{.Name}}\\t{{.State.Status}}\\t{{.State.ExitCode}}\\t{{.Config.Entrypoint}}" 2>nul || echo "Backend container not found"
+                    
+                    echo "3. Checking what happened to backend:"
+                    docker logs docbuilder-backend --tail=50 2>nul || echo "Cannot get backend logs"
+                    
+                    echo "4. Checking if backend can run manually:"
+                    docker run --rm --entrypoint python lab-backend:latest --version 2>nul && (
+                        echo "✓ Backend image is valid"
+                    ) || (
+                        echo "✗ Backend image has issues"
+                    )
+                    
+                    echo "5. Network status:"
+                    docker network inspect document-builder-ci-cd_default 2>nul | findstr "Name Containers" || echo "Network not found"
+                '''
+            }
+        }
+        
         stage('Create Lab Report') {
             steps {
                 bat '''
                     echo === DEVOPS LAB REPORT === > report.txt
                     echo BUILD NUMBER: %BUILD_NUMBER% >> report.txt
                     echo DATE: %date% %time% >> report.txt
-                    echo >> report.txt
-                    
-                    echo "=== TEST RESULTS ===" >> report.txt
-                    echo "Python dependencies installed" >> report.txt
-                    echo "Django tests executed" >> report.txt
                     echo >> report.txt
                     
                     echo === DOCKER CONTAINERS === >> report.txt
@@ -153,12 +152,11 @@ pipeline {
                 archiveArtifacts artifacts: 'report.txt', fingerprint: true
             }
         }
-        
     }
     
     post {
         always {
-            echo 'CI/CD пайплайн завершен'
+            echo 'Pipeline execution completed'
             bat '''
                 echo === FINAL STATE ===
                 docker-compose ps

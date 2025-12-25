@@ -17,6 +17,5 @@ COPY . .
 
 EXPOSE 8000
 
-# УБРАТЬ ENTRYPOINT - использовать только CMD
 # Или оставить простой CMD как запасной вариант
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

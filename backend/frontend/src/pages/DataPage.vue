@@ -3,7 +3,7 @@
     <div class="row items-center q-mb-md">
       <div class="text-h5 col">Наборы данных</div>
       <div class="col-auto">
-        <q-btn label="Создать набор" color="primary" class="q-mr-sm" @click="openEditor()" />
+        <q-btn label="Создать набор!!!!!!!!!!!!!!!!!!!" color="primary" class="q-mr-sm" @click="openEditor()" />
         <q-btn label="Импорт из шаблона" color="secondary" @click="openImport()" />
       </div>
     </div>

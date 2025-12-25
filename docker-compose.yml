@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: docbuilder-postgres
+    environment:
+      POSTGRES_DB: document_builder  # ← имя БД должно совпадать с settings.py
+      POSTGRES_USER: user            # ← пользователь должен совпадать
+      POSTGRES_PASSWORD: password    # ← пароль должен совпадать
+    ports:
+      - "5433:5432"  # ← используем порт 5433 чтобы не конфликтовать с локальной Postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: docbuilder-backend
+    environment:
+      # КРИТИЧЕСКИ ВАЖНО: эти переменные должны совпадать с Postgres
+      DB_NAME: document_builder      # ← должно совпадать с POSTGRES_DB
+      DB_USER: user                  # ← должно совпадать с POSTGRES_USER  
+      DB_PASSWORD: password          # ← должно совпадать с POSTGRES_PASSWORD
+      DB_HOST: postgres              # ← имя сервиса, а не localhost!
+      DB_PORT: 5432
+      DEBUG: "True"
+      DJANGO_SETTINGS_MODULE: backend.settings
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./backend:/app
+      - backend_static:/app/static
+      - backend_media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    command: >
+      sh -c "sleep 5 &&  # ← ждем запуска Postgres
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  frontend:
+    build:
+      context: ./backend/frontend
+      dockerfile: Dockerfile.dev
+    container_name: docbuilder-frontend
+    volumes:
+      - ./backend/frontend:/app
+      - /app/node_modules
+    ports:
+      - "9000:9000"  # ← ИЗМЕНИТЕ С 8080 НА 9000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_static:
+  backend_media:

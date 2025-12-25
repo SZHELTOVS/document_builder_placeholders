@@ -1,0 +1,21 @@
+# backend/frontend/Dockerfile.dev
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Копируем package файлы
+COPY package.json package-lock.json ./
+
+# Отключаем postinstall скрипт или устанавливаем без него
+ENV CI=true  
+RUN npm ci --no-audit --no-fund --ignore-scripts  # ← добавляем --ignore-scripts
+
+# Копируем ВСЕ файлы Quasar
+COPY . .
+
+# Теперь запускаем quasar prepare отдельно
+RUN npx quasar prepare
+
+EXPOSE 8080
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

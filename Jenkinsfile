@@ -74,7 +74,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed'
-            bat 'docker-compose down'
+            //bat 'docker-compose down'
         }
         success {
             echo 'SUCCESS: All stages passed'

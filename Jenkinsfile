@@ -27,20 +27,14 @@ pipeline {
                 bat '''
                     echo Step 2: Running with Docker Compose...
                     
-                    docker-compose down > compose_down.log 2>&1
-                    type compose_down.log
+                    echo "=== Force removing existing containers ==="
+                    docker rm -f docbuilder-postgres 2>nul || echo "Container not found or already removed"
                     
-                    docker-compose up -d > compose_up.log 2>&1
-                    type compose_up.log
+                    docker-compose down 2>nul || echo "Nothing to stop with compose"
                     
-                    timeout /t 5
-                    
-                    docker-compose ps > compose_status.log 2>&1
-                    type compose_status.log
-                    
-                    echo Application running successfully >> run.log
+                    echo "=== Starting fresh containers ==="
+                    docker-compose up -d
                 '''
-                archiveArtifacts artifacts: 'compose_*.log,run.log', fingerprint: true
             }
         }
         
